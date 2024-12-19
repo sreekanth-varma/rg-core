@@ -1,6 +1,7 @@
 package rgmiddleware
 
 import (
+	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -8,7 +9,7 @@ import (
 
 func CORSMiddleware() gin.HandlerFunc {
 	isEnabled := os.Getenv("middleware_cors_enabled")
-
+	log.Println("cors enabled")
 	return func(c *gin.Context) {
 		if isEnabled != "Y" {
 			c.Next()

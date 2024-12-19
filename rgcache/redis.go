@@ -39,7 +39,7 @@ func Init() rgutil.Err {
 	})
 
 	if ok := CheckHealth(); !ok {
-		slog.Error("ttcache: connection failed")
+		slog.Error("rgcache: connection failed")
 		panic("cache: connection failed")
 	}
 
@@ -49,7 +49,7 @@ func Init() rgutil.Err {
 func CheckHealth() bool {
 	_, err := rdb.ClientID(context.Background()).Result()
 	if err != nil {
-		slog.Error("ttcache: connection failed", "error", err)
+		slog.Error("rgcache: connection failed", "error", err)
 		return false
 	}
 

@@ -69,21 +69,9 @@ func GetEnv(key string, defaultValue string) string {
 	return defaultValue
 }
 
-/*
-initCache initializes the caching mechanism based on the provided options.
-It checks if caching is enabled, executes optional pre- and post-initialization
-handlers, and starts the cache using the Init function.
-
-Parameters:
-- options: *Options containing cache configurations.
-
-Returns:
-- rgutil.Err indicating success or an error in initialization.
-*/
-
 func initServer(options *Options) rgutil.Err {
 	if !options.WebServerEnabled {
-		slog.Info("ttserver: server not enabled")
+		slog.Info("server: server not enabled")
 		return rgutil.ErrNil
 	}
 
@@ -101,9 +89,9 @@ func initServer(options *Options) rgutil.Err {
 		options.WebServerPreHandler(server, baseRouter)
 	}
 
-	slog.Info("ttserver: starting on port " + options.WebServerPort)
+	slog.Info("rgserver: starting on port " + options.WebServerPort)
 	if err := server.Run(":" + options.WebServerPort); err != nil {
-		slog.Error("ttserver: failed to start", "error", err.Error())
+		slog.Error("rgserver: failed to start", "error", err.Error())
 		return rgutil.ErrNil
 	}
 
