@@ -2,8 +2,13 @@ package server
 
 import (
 	"context"
+	"log"
+	"log/slog"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sreekanth-varma/rg-core/rgcache"
+	"github.com/sreekanth-varma/rg-core/rgdb"
+	"github.com/sreekanth-varma/rg-core/rgutil"
 )
 
 var (
@@ -32,7 +37,7 @@ type Options struct {
 	OnReadyHandler      func()
 	WebServerEnabled    bool
 	WebServerPort       string
-	WebServerPreHandler func(*gin.Engine)
+	WebServerPreHandler func(*gin.Engine, *gin.RouterGroup)
 }
 
 func GetDefaultOptions() Options {
@@ -49,18 +54,12 @@ func GetDefaultOptions() Options {
 		CachePreHandler:  nil,
 		CachePostHandler: nil,
 
-		ESEnabled:     true,
-		ESPreHandler:  nil,
-		ESPostHandler: nil,
-
 		MongoEnabled: true,
 		PGEnabled:    true,
 
-		OnReadyHandler: nil,
-
-		WebServerEnabled: true,
-		WebServerPort:    "8080",
-		// WebServerPreHandler: nil,
+		WebServerEnabled:    true,
+		WebServerPort:       "8080",
+		WebServerPreHandler: nil,
 	}
 }
 
@@ -68,13 +67,40 @@ func Start(options Options) {
 	LoadConfig()
 	ctx = context.TODO()
 
-	// initConfig(&options)
-
 	if options.MongoEnabled {
-		Connect(&ctx)
-		defer Disconnect(&ctx)
+		if err := rgdb.Connect(&ctx); err != rgutil.ErrNil {
+			panic("rgserver: mongo connection failed")
+		}
+		defer rgdb.Disconnect(&ctx)
 	}
 
-	initCache(&options)
+	if err := InitCache(&options); err != rgutil.ErrNil {
+		panic("rgserver: failed to start. cache connect failed")
+	}
+	if err := initServer(&options); err != rgutil.ErrNil {
+		panic("rgserver: failed to start. webserver(CORS) init failed")
+	}
 
+}
+
+func InitCache(options *Options) rgutil.Err {
+	if !options.CacheEnabled {
+		log.Println("cache not enabled")
+		return rgutil.ErrNil
+	}
+
+	if options.CachePreHandler != nil {
+		options.CachePreHandler()
+	}
+
+	if err := rgcache.Init(); err != rgutil.ErrNil {
+		slog.Error("server: cache failed to start")
+		return rgutil.ErrNil
+	}
+
+	if options.CachePostHandler != nil {
+		options.CachePostHandler()
+	}
+
+	return rgutil.ErrNil
 }

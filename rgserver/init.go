@@ -2,55 +2,20 @@ package server
 
 import (
 	"bufio"
-	"context"
 	"log"
 	"log/slog"
 	"os"
 	"strings"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/gin-gonic/gin"
+	"github.com/sreekanth-varma/rg-core/rgmiddleware"
 	rgutil "github.com/sreekanth-varma/rg-core/rgutil"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 var (
 	client *mongo.Client
-	rdb    *redis.Client
 )
-
-var ()
-
-func Connect(ctx1 *context.Context) {
-	// Load .env file
-	file, err := os.Open("app.env")
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-	defer file.Close()
-	ctx = *ctx1
-	log.Println("url : ", os.Getenv("db_url"))
-	mongoconn := options.Client().ApplyURI(os.Getenv("db_url"))
-	//	var err error
-	client, err = mongo.Connect(ctx, mongoconn)
-	if err != nil {
-		log.Fatal("mongo: connection failed", err)
-	}
-	err = client.Ping(ctx, readpref.Primary())
-	if err != nil {
-		log.Fatal("mongo: ping failed", err)
-	}
-
-	log.Println("mongo: connected")
-}
-func Disconnect(ctx *context.Context) {
-	client.Disconnect(*ctx)
-}
-
-func DB() *mongo.Database {
-	return client.Database(os.Getenv("DB_NAME"))
-}
 
 func LoadConfig() string {
 	file, err := os.Open("app.env")
@@ -104,53 +69,42 @@ func GetEnv(key string, defaultValue string) string {
 	return defaultValue
 }
 
-func initCache(options *Options) rgutil.Err {
-	if !options.CacheEnabled {
-		log.Println("cache not enabled")
+/*
+initCache initializes the caching mechanism based on the provided options.
+It checks if caching is enabled, executes optional pre- and post-initialization
+handlers, and starts the cache using the Init function.
+
+Parameters:
+- options: *Options containing cache configurations.
+
+Returns:
+- rgutil.Err indicating success or an error in initialization.
+*/
+
+func initServer(options *Options) rgutil.Err {
+	if !options.WebServerEnabled {
+		slog.Info("ttserver: server not enabled")
 		return rgutil.ErrNil
 	}
 
-	if options.CachePreHandler != nil {
-		options.CachePreHandler()
+	module := os.Getenv("module")
+	if module == "" {
+		log.Fatal("module is not defined")
 	}
 
-	if err := Init(); err != rgutil.ErrNil {
-		slog.Error("server: cache failed to start")
+	gin.SetMode(gin.ReleaseMode)
+	server := gin.Default()
+	server.Use(rgmiddleware.CORSMiddleware())
+	baseRouter := server.Group(module)
+
+	if options.WebServerPreHandler != nil {
+		options.WebServerPreHandler(server, baseRouter)
+	}
+
+	slog.Info("ttserver: starting on port " + options.WebServerPort)
+	if err := server.Run(":" + options.WebServerPort); err != nil {
+		slog.Error("ttserver: failed to start", "error", err.Error())
 		return rgutil.ErrNil
-	}
-
-	if options.CachePostHandler != nil {
-		options.CachePostHandler()
-	}
-
-	return rgutil.ErrNil
-}
-
-func Init() rgutil.Err {
-	ctx = context.Background()
-
-	// Get Redis host and password from environment variables
-	host := os.Getenv("redis_url")
-	if host == "" {
-		return rgutil.NewErr("redis_url cannot be empty")
-	}
-
-	password := os.Getenv("redis_password")
-
-	// Initialize Redis client
-	rdb = redis.NewClient(&redis.Options{
-		Addr:     host,
-		Password: password,
-		DB:       0,
-		OnConnect: func(ctx context.Context, cn *redis.Conn) error {
-			log.Println("cache: connected")
-			return nil
-		},
-	})
-
-	// Test the connection
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		return rgutil.NewErr("failed to connect to Redis: " + err.Error())
 	}
 
 	return rgutil.ErrNil
