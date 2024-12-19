@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/redis/go-redis/v9"
-	rgutil "github.com/sreekanth-varma/rg-core/rg-util"
+	rgutil "github.com/sreekanth-varma/rg-core/rgutil"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
