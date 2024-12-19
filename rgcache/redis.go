@@ -12,11 +12,9 @@ import (
 
 var (
 	rdb *redis.Client
-	ctx context.Context
 )
 
 func Init() rgutil.Err {
-	ctx = context.Background()
 
 	// Get Redis host and password from environment variables
 	host := os.Getenv("redis_url")

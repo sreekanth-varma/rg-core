@@ -77,7 +77,7 @@ func Start(options Options) {
 	if err := InitCache(&options); err != rgutil.ErrNil {
 		panic("rgserver: failed to start. cache connect failed")
 	}
-	if err := initServer(&options); err != rgutil.ErrNil {
+	if err := InitServer(&options); err != rgutil.ErrNil {
 		panic("rgserver: failed to start. webserver(CORS) init failed")
 	}
 

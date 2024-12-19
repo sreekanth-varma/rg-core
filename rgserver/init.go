@@ -10,11 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sreekanth-varma/rg-core/rgmiddleware"
 	rgutil "github.com/sreekanth-varma/rg-core/rgutil"
-	"go.mongodb.org/mongo-driver/mongo"
-)
-
-var (
-	client *mongo.Client
 )
 
 func LoadConfig() string {
@@ -69,7 +64,7 @@ func GetEnv(key string, defaultValue string) string {
 	return defaultValue
 }
 
-func initServer(options *Options) rgutil.Err {
+func InitServer(options *Options) rgutil.Err {
 	if !options.WebServerEnabled {
 		slog.Info("server: server not enabled")
 		return rgutil.ErrNil
