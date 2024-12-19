@@ -31,7 +31,7 @@ func Init() rgutil.Err {
 		Password: password,
 		DB:       0,
 		OnConnect: func(ctx context.Context, cn *redis.Conn) error {
-			log.Println("cache: connected")
+			log.Println("cache: connected succcessfully")
 			return nil
 		},
 	})
